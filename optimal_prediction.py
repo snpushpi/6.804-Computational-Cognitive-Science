@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy
+import scipy.stats
+
 
 
 
@@ -59,20 +60,44 @@ def opt_compute_posterior(joint, theta_min, theta_max, num_steps):
 	Z = 0
 	for theta in thetavals:
 		Z+= joint(theta)
+	print(Z)
 	postvals = []
 	for theta in thetavals:
 		postvals.append(joint(theta)/Z)
 	return thetavals, postvals
 
 def opt_predictions_plot(function1, function2, theta_min, theta_max):
-    observed_times = [50,100,150,200,250,300]
+    observed_times = list(range(25,50,5))
     for observe in observed_times:
-        thetavals, postvals = function1(function2(observe),theta_min,theta_max,3)
+        thetavals, postvals = function1(function2(observe),theta_min,theta_max,300)
         fig = plt.figure()
         fig.patch.set_facecolor('xkcd:white')
         plt.clf()
-        plt.ylabel('Predicted Total')
+        plt.ylabel('p(t_total|t_obs)')
+        plt.xlabel('t_total')
         plt.plot(thetavals, postvals)
+        plt.title('t_Obs = {}'.format(observe))
         plt.show()
-
-opt_predictions_plot(opt_compute_posterior, opt_build_powerlaw_joint, 0, 300)
+		#generating medians
+def opt_median_prediction(function1, function2, theta_min, theta_max):
+    median  = []
+    j = 0
+    observed_times = list(range(25,50))
+    for observe in observed_times:
+        thetavals, postvals = function1(function2(observe), theta_min, theta_max, 300000)
+        cum_thetavals = [postvals[0]]
+        for i in range(1,len(thetavals)):
+            cum_thetavals.append(cum_thetavals[-1]+postvals[i])
+        while j<len(cum_thetavals):
+            if cum_thetavals[j]>=0.5:
+                median.append(thetavals[j])
+                break
+            j+=1
+    fig = plt.figure()
+    plt.plot(observed_times, median)
+    plt.xlabel("t_obs")
+    plt.ylabel(" Predicted median")
+    plt.title("Median Prediction")
+    plt.show()
+#opt_predictions_plot(opt_compute_posterior, opt_build_powerlaw_joint, 0, 300)
+opt_median_prediction(opt_compute_posterior, opt_build_powerlaw_joint, 0, 300)
